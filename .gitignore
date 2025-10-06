@@ -1,0 +1,65 @@
+# OS
+.DS_Store
+
+# Python bytecode / build
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.dylib
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# Virtual environments / environment files
+.venv/
+venv/
+env/
+.env
+.env.*
+
+# IDE/editor
+.vscode/
+.idea/
+*.code-workspace
+
+# Notebooks
+.ipynb_checkpoints/
+
+# Logs and caches
+logs/
+*.log
+.cache/
+ultralytics/
+wandb/
+
+# Datasets and large artifacts (do not version)
+datasets/
+# In case datasets are nested inside the package path too
+deepsort_with_pytorch_v2/datasets/
+
+# Training/inference outputs
+runs/
+outputs/
+checkpoints/
+weights/
+models/
+
+# Learned weights / export formats
+*.pt
+*.pth
+*.onnx
+*.engine
+*.ckpt
+
+# Media generated during experiments (keep README assets elsewhere)
+*.mp4
+*.avi
+*.mov
+*.mkv
+*.webm
+
+# Docker/intermediate
+*.tar

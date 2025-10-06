@@ -1,4 +1,4 @@
-path: datasets/detrac
+path: datasets/UA-DETRAC
 train: images/train
 val: images/val
 names:
