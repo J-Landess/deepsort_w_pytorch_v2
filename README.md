@@ -2,46 +2,56 @@
 
 YOLOv8 + DeepSORT (PyTorch) package for vehicle detection and tracking (cars, buses, trucks).
 
-Note: Model fine-tuned on UA-DETRAC, derived from YOLOv8 COCO weights.
+Note: Fine-tuning targets UA-DETRAC-style data, starting from YOLOv8 COCO weights.
 
 ## Quickstart (Conda, Python 3.11, CPU)
 
 ```bash
-# 1) Ensure conda is available in your shell
-# For Anaconda:   source ~/anaconda3/etc/profile.d/conda.sh
-# For Miniconda:  source ~/miniconda3/etc/profile.d/conda.sh
-# For Miniforge:  source ~/miniforge3/etc/profile.d/conda.sh
-
-# 2) Create env
+# Ensure conda is available in your shell, then:
 conda create -y -n dspv2 python=3.11
 conda activate dspv2
 
-# 3) Install PyTorch CPU (use CUDA variant if you have GPU)
+# Install PyTorch (use a CUDA build if you have a GPU)
 conda install -y -c pytorch -c conda-forge pytorch torchvision cpuonly
 
-# 4) Install package deps and the package
+# Install this package (pulls ultralytics, deep-sort-realtime, opencv-python, PyYAML, typer)
 pip install -U pip
-pip install ultralytics deep-sort-realtime opencv-python PyYAML typer
 pip install -e .
 
-# 5) Run
+# CLI
 deepsort-with-pytorch-v2 --help
 ```
 
+After `pip install -e .`, console scripts `train`, `infer`, and `track` are also available (same modules as the Typer subcommands).
+
 ## CLI
 
+Config lives under the package directory (there is no top-level `config/`):
+
 ```bash
-deepsort-with-pytorch-v2 train --data config/detrac.yaml --epochs 50 --imgsz 1280
+deepsort-with-pytorch-v2 train \
+  --data deepsort_with_pytorch_v2/config/detrac.yaml \
+  --epochs 50 --imgsz 1280
+
 deepsort-with-pytorch-v2 infer --source path/to/video_or_image
 deepsort-with-pytorch-v2 track --source path/to/video.mp4
 deepsort-with-pytorch-v2 iterate --source path/to/video.mp4 --stride 3 --mode extract
 ```
 
-## Iterating and Processing Videos
+Equivalent entry points after install:
 
-The `iterator_tools` module streams frames efficiently for long videos.
+```bash
+train --data deepsort_with_pytorch_v2/config/detrac.yaml --epochs 50
+infer --source path/to/video_or_image
+track --source path/to/video.mp4
+```
 
-- FrameIterator: lazily read frames with stride
+`iterate` modes: `iterate` (count frames) or `extract` (write frames to `--outdir`, default `runs/frames`).
+
+## Iterating and processing videos
+
+`deepsort_with_pytorch_v2.iterator_tools` streams frames for long videos.
+
 ```python
 from deepsort_with_pytorch_v2.iterator_tools import FrameIterator
 
@@ -50,25 +60,24 @@ for frame in FrameIterator("traffic.mp4", stride=2):
     ...
 ```
 
-- FrameSlicer: break frames into fixed-length chunks
 ```python
 from deepsort_with_pytorch_v2.iterator_tools import FrameIterator, FrameSlicer
 
 slicer = FrameSlicer(FrameIterator("traffic.mp4"), slice_length=150)
-for chunk in slicer:  # list of 150 frames
+for chunk in slicer:  # list of frames
     ...
 ```
 
-- VideoInferenceIterator: batched YOLOv8 inference over a video
 ```python
 from deepsort_with_pytorch_v2.iterator_tools import VideoInferenceIterator
 
-vi = VideoInferenceIterator("traffic.mp4", model_path="yolov8l.pt", batch_size=4, conf=0.25, imgsz=1280)
+vi = VideoInferenceIterator(
+    "traffic.mp4", model_path="yolov8l.pt", batch_size=4, conf=0.25, imgsz=1280
+)
 for frame_idx, annotated_rgb, detections in vi:
     ...
 ```
 
-- FrameExtractor / VideoAssembler
 ```python
 from deepsort_with_pytorch_v2.iterator_tools import FrameExtractor, VideoAssembler
 
@@ -76,23 +85,13 @@ paths = FrameExtractor("traffic.mp4", "runs/frames/traffic", stride=3)
 VideoAssembler(sorted(paths), "runs/videos/traffic_assembled.mp4", fps=30)
 ```
 
-Design philosophy: streaming, composability, and reuse across modules.
+## Training / inference / tracking
 
-## Training
-
-- Uses `yolov8l.pt` (COCO pretrained) as init weights
-- Data config: `config/detrac.yaml`
-- Outputs: `runs/detect/train/weights/best.pt`
-
-## Inference
-
-- Run inference on images/videos
-- Outputs annotated results to `runs/inference/`
-
-## Tracking
-
-- YOLOv8 detections + DeepSORT tracking
-- Outputs tracked video with IDs
+- Train init weights: `yolov8l.pt`
+- Data YAML: `deepsort_with_pytorch_v2/config/detrac.yaml`
+- Ultralytics train outputs typically under `runs/detect/train/weights/best.pt`
+- `infer` writes annotated results under `runs/inference/`
+- `track` runs YOLOv8 detections + DeepSORT and writes a tracked video
 
 ## Docker (optional)
 
@@ -103,7 +102,7 @@ docker run --rm -it -v "$PWD:/work" deepsort-with-pytorch-v2 --help
 
 ## Dataset
 
-Expected structure for UA-DETRAC after conversion:
+Expected structure for UA-DETRAC after conversion (see the package YAML):
 
 ```yaml
 path: datasets/UA-DETRAC
